@@ -220,3 +220,200 @@ This provides:
 
 ---
 
+
+# 🏗️ Installing Jenkins on an EC2 Server
+
+### A Complete & Beginner‑Friendly Guide
+
+Jenkins can run on Windows, macOS, or Linux, but the **most recommended setup** for DevOps learning and production is **Jenkins on a Linux EC2 instance (Ubuntu/Debian)**.
+
+This guide explains:
+
+* EC2 requirements
+* Java installation
+* Jenkins installation
+* Service configuration
+* Accessing Jenkins UI
+* Security group setup
+
+---
+
+## 1️⃣ EC2 System Requirements for Jenkins
+
+Jenkins is lightweight, but plugins + builds consume RAM and CPU.
+
+**Recommended instance types:**
+
+| Instance Type | RAM  | CPU    | Recommendation          |
+| ------------- | ---- | ------ | ----------------------- |
+| **t2.medium** | 4 GB | 2 vCPU | ✔ Ideal for Jenkins     |
+| **t2.small**  | 2 GB | 1 vCPU | ⚠ May freeze under load |
+| **t3.medium** | 4 GB | 2 vCPU | ✔ Better performance    |
+
+### 📌 Why `t2.medium`?
+
+* Jenkins + plugins need at least **4 GB RAM**
+* Java is memory‑heavy
+* Build tools (Maven, Gradle) need CPU
+
+---
+
+## 2️⃣ Install Java (Required for Jenkins)
+
+Jenkins requires **Java 17** or **Java 21**.
+
+### Update system packages:
+
+```bash
+sudo apt update
+```
+
+### Install Java 21:
+
+```bash
+sudo apt install openjdk-21-jre-headless -y
+```
+
+### Verify Java version:
+
+```bash
+java -version
+```
+
+Expected output example:
+
+```
+openjdk version "21.0.1" 2023-10-17
+```
+
+---
+
+## 3️⃣ Install Jenkins (Debian/Ubuntu)
+
+📌 Always follow the official guide:
+[https://www.jenkins.io/doc/book/installing/linux/#debianubuntu](https://www.jenkins.io/doc/book/installing/linux/#debianubuntu)
+
+Below are the exact official steps.
+
+### 🧩 Step 1 — Add Jenkins GPG key
+
+```bash
+sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+```
+
+### 🧩 Step 2 — Add Jenkins repository
+
+```bash
+echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+```
+
+### 🧩 Step 3 — Update system packages
+
+```bash
+sudo apt update
+```
+
+### 🧩 Step 4 — Install Jenkins
+
+```bash
+sudo apt install jenkins -y
+```
+
+---
+
+## 4️⃣ Start & Enable Jenkins
+
+### Start Jenkins service:
+
+```bash
+sudo systemctl start jenkins
+```
+
+### Enable Jenkins on boot:
+
+```bash
+sudo systemctl enable jenkins
+```
+
+### Check status:
+
+```bash
+sudo systemctl status jenkins
+```
+
+Expected: **active (running)**
+
+---
+
+## 5️⃣ Access Jenkins Web UI
+
+Open a browser and enter:
+
+```
+http://<EC2-Public-IP>:8080
+```
+
+Example:
+
+```
+http://54.220.10.45:8080
+```
+
+---
+
+## 6️⃣ Retrieve Jenkins Initial Admin Password
+
+Run:
+
+```bash
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
+
+Copy the password and paste it into the Jenkins setup wizard.
+
+Then:
+
+* Install suggested plugins
+* Create admin user
+* Complete setup
+
+---
+
+## 7️⃣ Firewall / Security Group Rules
+
+Open port 8080 in your EC2 security group:
+
+| Port | Protocol | Description |
+| ---- | -------- | ----------- |
+| 8080 | TCP      | Jenkins UI  |
+| 22   | TCP      | SSH access  |
+
+---
+
+## 8️⃣ ✔️ Verify Jenkins is Listening on Port 8080 (`ss -tunlp`)
+
+After installation, confirm that the Jenkins Java process is **listening on port 8080**.
+
+Run:
+
+```bash
+ss -tunlp | grep 8080
+```
+
+Example Output:
+
+```
+tcp   LISTEN 0    100   0.0.0.0:8080    0.0.0.0:*   users:(("java",pid=1234,fd=45))
+tcp   LISTEN 0    100   [::]:8080       [::]:*      users:(("java",pid=1234,fd=45))
+```
+
+Meaning:
+
+* **LISTEN** → Jenkins server is actively running
+* **java** → Jenkins is a Java application
+* **8080** → Default Jenkins port
+* **pid=1234** → Jenkins process ID
+
+This confirms Jenkins is successfully running and reachable on port 8080.
+
+
