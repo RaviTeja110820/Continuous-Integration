@@ -417,3 +417,41 @@ Meaning:
 This confirms Jenkins is successfully running and reachable on port 8080.
 
 
+
+
+# Changing Jenkins URL
+
+>> Dashboard → Manage Jenkins → System → Jenkins URL → Update → Save
+
+
+# Jenkins Demonstrations
+
+## Demo 1: Run Linux Commands
+
+Steps: 1. New Item → Freestyle Project → Name: Job1\
+2. Build Steps → Execute Shell\
+3. Commands:
+
+``` bash
+touch file1
+echo "Hello Jenkins!"
+```
+
+4.  Save → Build Now\
+5.  Check Console Output & Workspace
+
+------------------------------------------------------------------------
+
+## Demo 2: Clone GitHub Repository
+
+Steps: 1. New Item → Freestyle → Name: CloneRepo\
+2. Source Code Management → Git\
+3. Repo URL:
+
+    https://github.com/Sonal0409/myproject-08sep-sonal.git
+
+4.  Branch: `master`\
+5.  Save → Build Now\
+6.  Check Workspace
+
+------------------------------------------------------------------------
