@@ -455,3 +455,192 @@ Steps: 1. New Item → Freestyle → Name: CloneRepo\
 6.  Check Workspace
 
 ------------------------------------------------------------------------
+
+
+
+# ⚡ Jenkins Triggers
+
+Jenkins **Triggers** allow jobs to run automatically without clicking **Build Now**.
+They help automate CI/CD pipelines by reacting to **events**, **time schedules**, **API calls**, and more.
+
+Jenkins provides **4 commonly used triggers**.
+
+---
+
+# 🔹 1. Trigger Builds Remotely (via URL / curl / scripts)
+
+This trigger allows starting a Jenkins job from:
+
+* Browser URL
+* curl command
+* External automation tools
+
+## ✅ Steps
+
+### **Step 1 — Enable Remote Trigger**
+
+1. Open Job → Configure
+2. Go to **Build Triggers**
+3. Select: **Trigger builds remotely (e.g., from scripts)**
+4. Enter a token, e.g.: `token1`
+
+### **Step 2 — Jenkins Generates Trigger URL**
+
+Format:
+
+```
+JENKINS_URL/job/<JOB_NAME>/build?token=<TOKEN_NAME>
+```
+
+Example:
+
+```
+Jenkins URL: http://3.140.252.165:8080
+Job Name: job4
+Token: token1
+```
+
+Final URL:
+
+```
+http://3.140.252.165:8080/job/job4/build?token=token1
+```
+
+Open this URL → The job runs automatically.
+
+### **Step 3 — Trigger Remotely Using curl**
+
+You need your Jenkins **User API Token**.
+
+#### 🔑 How to get API Token:
+
+Jenkins Dashboard → User → Configure → API Token → **Generate New Token**
+
+Suppose token = `abc123xyz`
+
+Run:
+
+```bash
+curl -l -u admin:abc123xyz http://3.140.252.165:8080/job/CloneRepo/build?token=token1
+```
+
+This triggers the job **remotely and without password**.
+
+---
+
+# 🔹 2. GitHub Hook Trigger for GITScm Polling (Best for CI)
+
+This automatically builds the job when a GitHub push occurs.
+
+## Step 1 — Enable Webhook Trigger in Jenkins
+
+Job → Configure → Build Triggers → Select:
+
+```
+GitHub hook trigger for GITScm polling
+```
+
+Save the job.
+
+⚠️ IMPORTANT: **Always save the job before adding GitHub webhook.**
+
+## Step 2 — Configure Webhook in GitHub
+
+1. Go to GitHub Repo → **Settings** → **Webhooks**
+2. Remove old webhooks if any
+3. Click **Add Webhook**
+
+Fill the details:
+
+* **Payload URL:**
+
+```
+http://3.140.252.165:8080/github-webhook/
+```
+
+* **Content Type:** `application/json`
+* **Secret:** leave empty
+* **Events:** *Just the push event*
+* Active ✔
+
+Click **Add Webhook**.
+
+## Step 3 — Push Code to GitHub
+
+```bash
+git add .
+git commit -m "trigger test"
+git push
+```
+
+📌 Jenkins automatically starts a build → **True CI**.
+
+---
+
+# 🔹 3. Build Periodically (CRON Syntax)
+
+Runs the job at scheduled intervals.
+
+Example: **Run every 2 minutes**
+
+1. Job → Configure → Build Triggers
+2. Select **Build periodically**
+3. Enter:
+
+```
+*/2 * * * *
+```
+
+✔ Jenkins builds every 2 minutes.
+
+---
+
+# 🔹 4. Poll SCM (Check Git repo periodically)
+
+This checks GitHub (or any repo) on a schedule, and triggers build **only if code changed**.
+
+Steps:
+
+1. Job → Configure → Add Git repo under **Source Code Management**
+2. Build Triggers → Select: **Poll SCM**
+3. Enter CRON expression:
+
+```
+* * * * *
+```
+
+Meaning:
+✔ Check repo every 1 minute
+✔ Build only when changes exist
+
+---
+
+# 🔍 Poll SCM vs GitHub Webhook
+
+| Feature           | GitHub Webhook    | Poll SCM                           |
+| ----------------- | ----------------- | ---------------------------------- |
+| Triggered by      | GitHub push event | Jenkins polling schedule           |
+| Immediate?        | ✔ Instant         | ✖ Depends on cron                  |
+| Load on Jenkins   | Very Low          | High                               |
+| Internet Required | Yes               | No (works with local Git)          |
+| Recommended?      | ⭐ YES             | Use only when webhook not possible |
+
+---
+
+# 📘 Summary Table of All Jenkins Triggers
+
+| Trigger                 | Used For                     | Example                           |
+| ----------------------- | ---------------------------- | --------------------------------- |
+| **Remote Trigger**      | Start job through URL/curl   | `curl .../build?token=token1`     |
+| **GitHub Hook Trigger** | Auto-build on Git push       | Push → Jenkins builds             |
+| **Build Periodically**  | Scheduled builds             | `*/2 * * * *`                     |
+| **Poll SCM**            | Build only when repo changes | Check every min, build on changes |
+
+---
+
+If you want, I can also add:
+
+* Jenkinsfile examples for all trigger types
+* Visual diagrams of trigger workflows
+* Troubleshooting webhook errors (403, 500, timeout)
+* Integration examples for GitHub, GitLab, Bitbucket
