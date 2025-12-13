@@ -1346,3 +1346,378 @@ Package (WAR)
 ---
 
 
+# 🚀 Jenkins Pipelines
+
+---
+
+## 1️⃣ What is a Jenkins Pipeline?
+
+A **Jenkins Pipeline** is a set of tasks (jobs/steps) executed in a **defined order**.
+
+* By default → **sequential execution**
+* Can be configured → **parallel execution**
+
+Pipelines are mainly used to implement **CI/CD workflows**, such as:
+
+* 🏗️ Build
+* 🧪 Test
+* 🔍 Code Review
+* 📦 Package
+* 🚀 Deploy
+
+👉 Jenkins **orchestrates** these steps; actual work is done by external tools.
+
+---
+
+## 2️⃣ Plugin‑Based Pipelines vs Pipeline as Code
+
+### 2.1 Plugin‑Based Pipelines (Old Approach)
+
+Also called **Upstream / Downstream pipelines**.
+
+**How it works:**
+
+* Multiple Freestyle jobs
+* Connected using plugins (e.g., Build Pipeline Plugin)
+* One job triggers the next
+
+**Limitations:**
+
+* ❌ Hard to maintain
+* ❌ No version control
+* ❌ Not scalable
+* ❌ UI‑dependent
+
+👉 **Outdated approach – not recommended** for modern CI/CD.
+
+---
+
+### 2.2 Jenkins Pipeline as Code (Recommended)
+
+**How it works:**
+
+* Entire pipeline written as **code**
+* Stored in Jenkins job or **Jenkinsfile**
+
+**Advantages:**
+
+* ✔ Sequential & parallel execution
+* ✔ Restart from failed stage
+* ✔ Version controlled (Git)
+* ✔ Scalable & reusable
+
+👉 **Modern, production‑ready standard**.
+
+---
+
+## 3️⃣ Jenkins Pipeline Characteristics
+
+* Pipeline = set of tasks
+* Sequential by default
+* Parallel execution supported
+* Written using **Groovy‑based DSL**
+* Requires coding
+
+---
+
+## 4️⃣ Jenkins Pipeline Syntax Types
+
+Jenkins supports **two** pipeline syntaxes.
+
+---
+
+### 4.1 Scripted Pipeline Syntax (Old)
+
+**Key Points:**
+
+* Introduced in early Jenkins
+* Pure Groovy
+* Always starts with `node`
+* No strict structure
+* Hard to read & maintain
+* No built‑in validation
+* On failure → restart from beginning
+
+**Example:**
+
+```groovy
+node {
+    stage('Build') {
+        sh 'mvn compile'
+    }
+    stage('Test') {
+        sh 'mvn test'
+    }
+}
+```
+
+👉 **Not recommended** for beginners or production use.
+
+---
+
+### 4.2 Declarative Pipeline Syntax (Recommended)
+
+**Key Points:**
+
+* Introduced in Jenkins 2.x
+* Starts with `pipeline`
+* Well‑structured & readable
+* Built‑in validation
+* Restart from failed stage
+* Pipeline Syntax Generator available
+
+👉 **Industry standard**.
+
+---
+
+## 5️⃣ Declarative Pipeline – High‑Level Structure
+
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Example') {
+            steps {
+                echo 'Hello Jenkins'
+            }
+        }
+    }
+}
+```
+
+---
+
+## 6️⃣ Jenkins Pipeline as Code – Detailed Structure
+
+All pipeline code lives inside `pipeline { }`.
+
+---
+
+### 6.1 Comments
+
+```groovy
+// This is a comment
+```
+
+Comments are ignored during execution.
+
+---
+
+### 6.2 `agent` (MANDATORY)
+
+Defines **where** the pipeline runs.
+
+```groovy
+agent any
+```
+
+**Options:**
+
+* `any` → any available node
+* `label 'linux'` → specific agent
+
+---
+
+### 6.3 `tools` (OPTIONAL)
+
+Used to specify tool versions.
+
+```groovy
+tools {
+    maven 'mymaven'
+}
+```
+
+Tool must be configured in:
+**Manage Jenkins → Tools**
+
+---
+
+### 6.4 `triggers` (OPTIONAL)
+
+Defines **automatic execution**.
+
+```groovy
+triggers {
+    pollSCM('* * * * *')
+}
+```
+
+or
+
+```groovy
+triggers {
+    cron('H/5 * * * *')
+}
+```
+
+---
+
+### 6.5 `parameters` (OPTIONAL)
+
+Used to make pipelines **dynamic**.
+
+```groovy
+parameters {
+    string(name: 'ENV', defaultValue: 'dev')
+}
+```
+
+---
+
+### 6.6 `environment` (OPTIONAL)
+
+Defines environment variables.
+
+```groovy
+environment {
+    APP_NAME = 'addressbook'
+}
+```
+
+Available across all stages.
+
+---
+
+### 6.7 `stages` (MANDATORY)
+
+Main execution block.
+
+* Contains multiple `stage`
+* Runs sequentially by default
+* Can run in parallel
+
+---
+
+### 6.8 `stage` (MANDATORY)
+
+Represents one logical unit.
+
+```groovy
+stage('Compile') {
+    steps {
+        sh 'mvn compile'
+    }
+}
+```
+
+---
+
+### 6.9 `steps` (MANDATORY)
+
+Actual commands/scripts.
+
+```groovy
+steps {
+    sh 'mvn test'
+}
+```
+
+---
+
+### 6.10 `post` (OPTIONAL but Important)
+
+Defines actions after execution.
+
+```groovy
+post {
+    success {
+        echo 'Build successful'
+    }
+    failure {
+        echo 'Build failed'
+    }
+}
+```
+
+Supported blocks:
+
+* `always`
+* `success`
+* `failure`
+* `unstable`
+
+---
+
+## 7️⃣ Complete Declarative Pipeline Example
+
+```groovy
+pipeline {
+
+    agent any
+
+    tools {
+        maven 'mymaven'
+    }
+
+    triggers {
+        pollSCM('* * * * *')
+    }
+
+    environment {
+        APP_NAME = 'addressbook'
+    }
+
+    stages {
+
+        stage('Compile') {
+            steps {
+                sh 'mvn compile'
+            }
+        }
+
+        stage('Code Review') {
+            steps {
+                sh 'mvn pmd:pmd'
+            }
+            post {
+                success {
+                    echo 'Code review successful'
+                }
+                failure {
+                    echo 'Code review failed'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Package') {
+            steps {
+                sh 'mvn package'
+            }
+        }
+    }
+}
+```
+
+---
+
+## 8️⃣ Key Corrections & Clarifications
+
+* ✅ Declarative pipeline is preferred
+* ✅ Scripted pipeline is mostly obsolete
+* ✅ `agent` and `stages` are mandatory
+* ✅ Pipelines are validated by Jenkins
+* ✅ Pipelines can resume from failed stage
+* ✅ Best practice → store pipeline in **Jenkinsfile**
+
+---
+
+## 9️⃣ Summary
+
+* Plugin‑based pipelines → ❌ old & UI‑driven
+* Pipeline as Code → ✅ modern & scalable
+* Declarative syntax → ✅ structured & readable
+* Pipelines enable CI/CD automation
+* Jenkins = **orchestrator**, not executor
+
+---
+
+📌 **Tip:** Always store pipelines in Git as a `Jenkinsfile` for version control and team collaboration.
+
+
