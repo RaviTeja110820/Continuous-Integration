@@ -1721,3 +1721,64 @@ pipeline {
 📌 **Tip:** Always store pipelines in Git as a `Jenkinsfile` for version control and team collaboration.
 
 
+# 🚀 Jenkins Pipeline to Build Java Code Using Maven
+
+It explains a **Jenkins Declarative Pipeline** used to **clone, compile, test, and package a Java project using Maven**.
+
+---
+
+## ✅Jenkins Pipeline
+
+```groovy
+pipeline {
+
+    agent any
+    
+    // agent any:
+    // Jenkins can run this pipeline on ANY available executor/agent
+    // If no other agents are configured, it runs on the Jenkins EC2 machine itself
+
+    tools {
+        maven 'mymaven'
+    }
+    // 'mymaven' must match the Maven name configured in:
+    // Manage Jenkins → Tools → Maven installations
+
+    stages {
+
+        stage('Clone Repository') {
+            steps {
+                git branch: 'master', \
+                    url: 'https://github.com/Sonal0409/DevOpsCodeDemo.git'
+            }
+        }
+
+        stage('Compile Code') {
+            steps {
+                sh 'mvn compile'
+                // Windows agents:
+                // bat 'mvn compile'
+            }
+        }
+
+        stage('Test Code') {
+            steps {
+                sh 'mvn test'
+                // Windows agents:
+                // bat 'mvn test'
+            }
+        }
+
+        stage('Build / Package Code') {
+            steps {
+                sh 'mvn package'
+                // Windows agents:
+                // bat 'mvn package'
+            }
+        }
+    }
+}
+```
+
+---
+
