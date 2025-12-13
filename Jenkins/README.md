@@ -644,3 +644,417 @@ If you want, I can also add:
 * Visual diagrams of trigger workflows
 * Troubleshooting webhook errors (403, 500, timeout)
 * Integration examples for GitHub, GitLab, Bitbucket
+
+
+# Jenkins Integration with Build Tools
+
+## Introduction
+
+Jenkins is an **automation and orchestration tool** used to automate different stages of the Software Development Life Cycle (SDLC).
+However, **Jenkins alone cannot compile, test, or package code**.
+To perform these tasks, Jenkins integrates with **Build Automation Tools**.
+
+---
+
+## Why Build Tools Are Required
+
+When working with application source code (Java, .NET, Python, Node.js, etc.), we usually need to:
+
+- Compile the code
+- Run unit and integration tests
+- Package the application (JAR, WAR, ZIP, etc.)
+- Review code quality
+- Check code coverage
+
+➡ Jenkins cannot perform these operations by itself.
+
+---
+
+## Role of Build Automation Tools
+
+Build tools are responsible for:
+
+- Compiling source code
+- Resolving dependencies
+- Running automated tests
+- Packaging applications
+- Generating test and coverage reports
+
+### Common Build Tools by Language
+
+| Language | Build Tool |
+|--------|-----------|
+| Java | Maven, Gradle, Ant |
+| .NET / C# | MSBuild |
+| Node.js | NPM / Yarn |
+| Python | Interpreter-based (no compilation) |
+
+---
+
+## Important Note on Python
+
+Python is an **interpreted language**, so:
+
+- No compilation is required
+- Code is executed directly using the Python interpreter
+- Testing is done using tools like:
+  - pytest
+  - unittest
+  - nose
+
+In Jenkins pipelines, Python jobs usually:
+- Install dependencies (`pip install`)
+- Run tests
+- Execute the application
+
+---
+
+## Jenkins as an Orchestrator
+
+Jenkins does **NOT**:
+- Compile code
+- Test code
+- Package code
+- Perform code review
+- Generate coverage reports
+
+Jenkins **ORCHESTRATES** these tasks by integrating with other tools.
+
+### Typical Jenkins Flow
+
+```
+Jenkins Job
+   ↓
+Fetch code from GitHub
+   ↓
+Trigger build tool
+   ↓
+Build tool runs commands
+   ↓
+Output displayed in Jenkins console
+```
+
+---
+
+## Jenkins Integration with Build Tools
+
+Jenkins integrates with build tools in two main ways:
+
+### 1. Using Jenkins Plugins
+
+Jenkins is a **plugin-based tool**.
+
+Common plugins:
+- Maven Integration Plugin
+- Gradle Plugin
+- NodeJS Plugin
+
+---
+
+### 2. Using Shell / Batch Commands
+
+Jenkins can execute build commands using:
+- **Execute Shell** (Linux)
+- **Execute Windows Batch Command** (Windows)
+
+#### Examples
+
+**Java (Maven):**
+```
+mvn clean install
+```
+
+**Node.js:**
+```
+npm install
+npm test
+```
+
+**Python:**
+```
+pip install -r requirements.txt
+pytest
+```
+
+**.NET:**
+```
+msbuild MyApp.sln
+```
+
+---
+
+## Build Tool Setup in Jenkins
+
+For Jenkins to work with build tools, they must be configured.
+
+### Path:
+```
+Manage Jenkins → Global Tool Configuration
+```
+
+Configure:
+- JDK
+- Maven
+- Gradle
+- NodeJS
+
+---
+
+## Example Jenkins Job Flow
+
+```
+Developer pushes code to GitHub
+        ↓
+Jenkins job starts
+        ↓
+Jenkins pulls code from GitHub
+        ↓
+Jenkins triggers build tool
+        ↓
+Build tool compiles/tests/packages code
+        ↓
+Results shown in Jenkins console
+```
+
+---
+
+## Key Takeaways
+
+- Jenkins is NOT a build tool
+- Jenkins is an automation/orchestration server
+- Build tools perform compilation, testing, and packaging
+- Jenkins integrates with build tools using plugins or shell commands
+- Python does not require compilation
+- Build tools must be configured before running Jenkins jobs
+
+---
+
+
+
+
+# Maven + Jenkins – Build Pipeline Explanation
+
+## 1. What is a Pipeline?
+
+A **Pipeline** is a set of tasks executed one after another in a defined sequence to achieve a goal.
+
+In DevOps, a pipeline usually represents the:
+- Compile
+- Test
+- Review
+- Coverage
+- Package
+
+The tool used to **orchestrate and automate pipelines** is **Jenkins**.
+
+---
+
+## 2. SDLC Context – Build Stage
+
+Once a developer pushes code to GitHub/GitLab, the next SDLC stage is **BUILD**.
+
+BUILD is not a single step. It includes:
+- Compiling the code
+- Running unit tests
+- Reviewing code quality
+- Checking code coverage
+- Packaging the application
+
+Executing these steps in sequence forms a **Build Pipeline**.
+
+---
+
+## 3. Why Build Automation Tools Are Needed
+
+Jenkins **cannot**:
+- Compile code
+- Test code
+- Package applications
+
+To perform these tasks, Jenkins integrates with **Build Automation Tools**.
+
+One such powerful build tool is **MAVEN**.
+
+---
+
+## 4. What is Maven?
+
+Maven is:
+- A build automation tool
+- Mainly used for Java projects
+- Simple, powerful, and widely adopted
+
+Java developers write code in a structure that Maven understands.
+
+---
+
+## 5. What Developers Provide
+
+Java developers usually provide:
+1. Java source code
+2. Unit test cases (JUnit)
+
+This code is pushed to GitHub/GitLab and handed over to the DevOps team.
+
+---
+
+## 6. Maven Build Steps and Plugins
+
+| Build Step | Maven Plugin | Command |
+|-----------|-------------|---------|
+| Clean old builds | Clean Plugin | mvn clean |
+| Compile code | Compiler Plugin | mvn compile |
+| Run tests | Surefire Plugin | mvn test |
+| Package app | Jar/War Plugin | mvn package |
+
+Maven downloads and executes these plugins automatically.
+
+---
+
+## 7. Maven Output – Target Folder
+
+- Maven generates a **target/** folder
+- All build outputs (JAR/WAR, reports) are stored here
+- The target folder is created automatically by Maven
+
+---
+
+## 8. Maven Repositories
+
+Maven downloads plugins and dependencies from repositories.
+
+### Types:
+1. **Central Repository** – Public Maven repo
+2. **Remote Repository** – Organization-level repo (Nexus/Artifactory)
+3. **Local Repository** – Local machine repo
+   - Default location:
+     ```
+     ~/.m2/repository
+     ```
+
+Deciding repository locations is the **developer’s responsibility**.
+
+---
+
+## 9. Plugins and Versions Responsibility
+
+- DevOps engineers do NOT decide plugin versions
+- Developers define plugins and versions in **pom.xml**
+
+---
+
+## 10. POM.xml – Heart of Maven
+
+POM = Project Object Model
+
+- Mandatory for every Maven project
+- Without pom.xml, Maven cannot build the project
+
+POM.xml defines:
+- Build plugins
+- Plugin versions
+- Repository URLs
+- Dependencies for application and tests
+
+---
+
+## 11. Standard Maven Project Structure
+
+```
+project-root/
+├── src/
+│   ├── main/java/     (Application code)
+│   └── test/java/     (Unit tests)
+├── pom.xml
+```
+
+---
+
+## 12. Maven Plugin Documentation
+
+Official site:
+https://maven.apache.org/plugins/
+
+---
+
+## 13. Manual Maven Build (Not Recommended)
+
+Steps:
+1. Clone repo
+2. Install Maven
+3. Run:
+   ```
+   mvn compile
+   mvn test
+   mvn package
+   ```
+
+Problems:
+- Manual effort
+- Error-prone
+- No automation
+
+---
+
+## 14. Automating Maven Using Jenkins
+
+Jenkins enables **Continuous Integration (CI)**.
+
+### Flow:
+```
+Developer commits code
+        ↓
+Jenkins pulls code
+        ↓
+Jenkins triggers Maven
+        ↓
+Maven builds application
+        ↓
+Output generated
+```
+
+---
+
+## 15. Jenkins Workspace and Maven Output
+
+- Jenkins workspace:
+  ```
+  /var/lib/jenkins/workspace
+  ```
+
+- Maven output:
+  ```
+  /var/lib/jenkins/workspace/JOB_NAME/target/
+  ```
+
+---
+
+## 16. Jenkins + Maven Integration Setup
+
+Steps:
+1. Jenkins Dashboard
+2. Manage Jenkins
+3. Global Tool Configuration
+4. Maven:
+   - Name: mymaven
+   - Enable: Install automatically
+5. Save
+
+Jenkins can now run Maven builds automatically.
+
+---
+
+## Key Takeaways
+
+- Maven is a build automation tool
+- Jenkins is a pipeline orchestrator
+- Developers control pom.xml
+- Jenkins triggers Maven builds
+- Output is stored in target folder
+- Builds are fully automated
+
+---
+
+
+
+
