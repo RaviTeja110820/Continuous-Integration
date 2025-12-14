@@ -1782,3 +1782,306 @@ pipeline {
 
 ---
 
+# Jenkins Declarative Pipeline – Parameterized Builds, Conditions, Approval & Error Handling
+
+---
+
+## Parameterized Build Pipeline
+
+```groovy
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'PERSON', defaultValue: 'Ravi', description: 'Name of an Employee')
+        string(name: 'TOOL', defaultValue: 'Jenkins', description: 'DevOps tool to learn')
+        choice(name: 'ENV', choices: ['Dev', 'Test', 'Prod'], description: 'Select Environment')
+        choice(name: 'BRANCH', choices: ['dev', 'master', 'main'], description: 'Git branch')
+    }
+
+    stages {
+        stage('Print Parameters') {
+            steps {
+                echo "Hello ${params.PERSON}"
+                echo "Learn the DevOps tool: ${params.TOOL}"
+                echo "Working in Environment: ${params.ENV}"
+                echo "Working on Git branch: ${params.BRANCH}"
+            }
+        }
+    }
+}
+```
+
+---
+
+## Parameterized Pipeline with Conditions
+
+```groovy
+pipeline {
+    agent any
+
+    tools {
+        maven 'mymaven'
+    }
+
+    parameters {
+        choice(name: 'ENV', choices: ['Dev', 'QA'], description: 'Select environment')
+    }
+
+    stages {
+        stage('Build on Dev') {
+            when {
+                expression { params.ENV == 'Dev' }
+            }
+            steps {
+                git 'https://github.com/Sonal0409/DevOpsCodeDemo.git'
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Test on QA') {
+            when {
+                expression { params.ENV == 'QA' }
+            }
+            steps {
+                git 'https://github.com/Sonal0409/DevOpsCodeDemo.git'
+                sh 'mvn pmd:pmd'
+                sh 'mvn test'
+            }
+        }
+    }
+}
+```
+
+---
+
+## Approval and Abort Pipeline
+
+```groovy
+pipeline {
+    agent any
+
+    tools {
+        maven 'mymaven'
+    }
+
+    stages {
+        stage('Clone Repo') {
+            steps {
+                git 'https://github.com/Sonal0409/DevOpsCodeDemo.git'
+            }
+        }
+
+        stage('Test Code') {
+            steps {
+                sh 'mvn test'
+                script {
+                    timeout(time: 10, unit: 'MINUTES') {
+                        input(
+                            id: 'DeployGate',
+                            message: 'Continue to Deploy?'
+                        )
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Code') {
+            steps {
+                echo 'Deployment completed successfully'
+            }
+        }
+    }
+}
+```
+### Best Practice
+```groovy
+stage('Test with Retry') {
+    steps {
+        retry(3) {
+            sh 'mvn test'
+        }
+    }
+}
+```
+
+---
+
+## Dynamic Pipeline Using Map Variable
+
+```groovy
+pipeline {
+    agent any
+
+    tools {
+        maven 'mymaven'
+    }
+
+    parameters {
+        choice(name: 'ENV', choices: ['Dev', 'QA'])
+    }
+
+    stages {
+        stage('Build Based on ENV') {
+            steps {
+                script {
+                    def mvnCMD = [
+                        Dev: 'compile',
+                        QA : 'package'
+                    ]
+
+                    def CMD = mvnCMD[params.ENV]
+
+                    git 'https://github.com/Sonal0409/DevOpsCodeDemo.git'
+                    sh "mvn ${CMD}"
+                }
+            }
+        }
+    }
+}
+```
+
+---
+
+## Error Handling with Retry and Try-Catch
+
+```groovy
+pipeline {
+    agent any
+
+    tools {
+        maven 'mymaven'
+    }
+
+    stages {
+        stage('Test with Retry') {
+            steps {
+                retry(3) {
+                    sh 'mvn test'
+                }
+            }
+        }
+    }
+}
+```
+
+---
+
+## 🔑 Key Interview Points
+
+* params.<NAME> → access parameters
+
+* when → conditional execution
+
+* input → manual approval
+
+* script {} → required for Groovy logic
+
+* Maps → dynamic pipelines
+
+* Prefer retry {} over manual loops
+
+
+# Jenkinsfile – Clear Explanation (Pipeline as Code)
+
+## What is a Jenkinsfile?
+A **Jenkinsfile** is a text file that contains the **Jenkins pipeline code** written using **Declarative** or **Scripted Pipeline** syntax.
+
+- File name is always **Jenkinsfile**
+- No file extension
+- Stored in **GitHub / GitLab**
+- Usually placed in the **root directory** of the repository
+- Jenkins reads this file and executes the pipeline defined inside it
+
+This concept is called **Pipeline as Code**.
+
+---
+
+## Why Jenkinsfile?
+- Pipeline is **version controlled**
+- Easy to track changes and rollback
+- Same pipeline logic across environments
+- Developers and DevOps work on the same repository
+- Easy auditing and history tracking
+
+---
+
+## Where Jenkinsfile Can Exist
+- Root directory (recommended)
+- Branch-specific Jenkinsfile
+- Each branch can have its own pipeline logic
+- Jenkins executes the pipeline from the branch it builds
+
+---
+
+## Real Scenario: Multiple Branch Pipelines
+
+### Requirement
+- Repository with multiple branches
+- Pipeline jobs should be created **automatically**
+- One pipeline per branch
+- Pipeline job name should be the **same as branch name**
+- No pipeline job for **production branch**
+
+---
+
+## Solution: Jenkinsfile + Multibranch Pipeline
+
+### Step 1: Add Jenkinsfile to Required Branches
+As a DevOps engineer:
+- Add `Jenkinsfile` to:
+  - dev
+  - qa
+  - feature branches
+- Do NOT add `Jenkinsfile` to:
+  - production branch
+
+Jenkins will ignore branches without a Jenkinsfile.
+
+---
+
+### Step 2: Create ONE Multibranch Pipeline Job in Jenkins
+1. Jenkins Dashboard → New Item
+2. Select **Multibranch Pipeline**
+3. Give a name (example: MyApp-Multibranch)
+4. Configure:
+   - Source Code Management: Git
+   - Repository URL
+   - Credentials (if required)
+5. Jenkins scans all branches for Jenkinsfile
+
+---
+
+## What Jenkins Does Automatically
+- Scans all branches
+- Detects Jenkinsfile
+- Creates pipeline jobs automatically
+- Pipeline job name equals branch name
+- Executes pipeline from that branch’s Jenkinsfile
+
+---
+
+## Result Table
+
+| Branch Name | Jenkinsfile Present | Pipeline Created |
+|------------|---------------------|------------------|
+| dev        | Yes                 | Yes              |
+| qa         | Yes                 | Yes              |
+| feature-1 | Yes                 | Yes              |
+| production| No                  | No               |
+
+---
+
+## Key Takeaways
+- Jenkinsfile is mandatory for pipeline execution
+- Multibranch pipelines eliminate manual job creation
+- Production safety by excluding Jenkinsfile
+- Pipeline logic stays close to application code
+
+---
+
+## Interview Summary
+Jenkinsfile enables **Pipeline as Code**.  
+Multibranch Pipeline automatically discovers branches containing Jenkinsfile and dynamically creates CI/CD pipelines while skipping protected branches like production.
+
+
