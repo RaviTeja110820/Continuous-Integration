@@ -1965,6 +1965,67 @@ pipeline {
 }
 ```
 
+```groovy
+pipeline {
+
+    agent any
+    // Run the pipeline on any available Jenkins agent
+    // If no agents are configured, it runs on the Jenkins server itself
+
+    tools {
+        maven 'mymaven'
+    }
+    // Uses the Maven version named "mymaven"
+    // This must be configured in Manage Jenkins → Tools
+
+    stages {
+
+        stage('Test Code with Retry Logic') {
+            steps {
+                script {
+                    // script block allows advanced Groovy logic
+                    // such as loops, conditions, try-catch, variables
+
+                    // Declare variables
+                    int maxRetries = 3          // Maximum number of retries
+                    int retries = 0             // Current retry count
+                    boolean success = false     // Flag to track success
+
+                    // Loop until success OR retries exhausted
+                    while (retries < maxRetries && !success) {
+
+                        try {
+                            // Risky command (may fail)
+                            sh 'mvn test'
+
+                            // If command succeeds, mark success
+                            success = true
+                            echo 'Test executed successfully'
+
+                        } catch (Exception e) {
+                            // If command fails, come here
+                            retries++   // Increment retry count
+
+                            echo "Attempt ${retries} failed. Retrying after 10 seconds..."
+
+                            // Wait for 10 seconds before next retry
+                            sleep(time: 10, unit: 'SECONDS')
+                        }
+                    }
+
+                    // If all retries are used and still not successful
+                    if (!success) {
+                        error "All ${maxRetries} attempts failed. Failing the pipeline."
+                        // error keyword stops the pipeline and marks it as FAILED
+                    }
+                }
+            }
+        }
+    }
+}
+
+```
+
 ---
 
 ## 🔑 Key Interview Points
