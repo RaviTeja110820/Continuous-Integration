@@ -2028,6 +2028,55 @@ pipeline {
 
 ---
 
+## Jenkins-parallel-pipeline
+
+```groovy
+pipeline {
+
+    agent any
+    // Run the pipeline on any available Jenkins agent
+
+    tools {
+        maven 'mymaven'
+        // Uses the Maven version configured in Jenkins (Manage Jenkins → Tools)
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                // Clone the Git repository
+                git branch: 'master', \
+                    url: 'https://github.com/Sonal0409/DevOpsCodeDemo.git'
+            }
+        }
+
+        stage('Parallel Execution') {
+            parallel {
+
+                stage('Code Review') {
+                    steps {
+                        // Static code analysis using PMD
+                        sh 'mvn pmd:pmd'
+                    }
+                }
+
+                stage('Test Code') {
+                    steps {
+                        // Run unit tests
+                        sh 'mvn test'
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+
+
+
+
 ## 🔑 Key Interview Points
 
 * params.<NAME> → access parameters
@@ -2146,3 +2195,185 @@ Jenkinsfile enables **Pipeline as Code**.
 Multibranch Pipeline automatically discovers branches containing Jenkinsfile and dynamically creates CI/CD pipelines while skipping protected branches like production.
 
 
+# 🌿 Jenkins Multibranch Pipeline — Clear & Complete Notes
+
+These notes explain **what a Multibranch Pipeline is**, **why it is used**, and **how Jenkins automatically creates pipeline jobs for Git branches** — in a clean, beginner-friendly way.
+
+---
+
+## 🔰 What is a Multibranch Pipeline?
+
+A **Jenkins Multibranch Pipeline** is a special type of Jenkins job that:
+
+* Scans a **Git repository**
+* Detects **all branches automatically**
+* Creates **one Jenkins pipeline job per branch**
+* Runs pipeline logic defined in a **Jenkinsfile** inside each branch
+
+👉 Everything is **fully automated** — no need to create jobs manually for each branch.
+
+---
+
+## 📁 Repository Requirements
+
+To use a Multibranch Pipeline, your GitHub repository must:
+
+* Exist on GitHub (or GitLab/Bitbucket)
+* Contain **multiple branches**
+* Store **source code and test cases** in those branches
+* Optionally contain different logic per branch
+
+Example branches:
+
+```
+main
+feature-login
+test
+release
+prod
+```
+
+---
+
+## 🎯 Desired Behavior (Goal)
+
+We want Jenkins to:
+
+* Automatically create **one pipeline job per branch**
+* Run **branch-specific tasks** (build, test, deploy, etc.)
+* Name each pipeline job **exactly the same as the branch name**
+* ❌ **NOT create any pipeline job for the `prod` branch**
+* Fully automate the entire process
+
+---
+
+## 🧠 Key Concept — Jenkinsfile
+
+Jenkins **does not guess** what steps to run.
+
+👉 Jenkins only creates a pipeline job **if a branch contains a `Jenkinsfile`**.
+
+### What is a Jenkinsfile?
+
+* A text file named exactly: `Jenkinsfile`
+* Written in **Groovy (Declarative Pipeline)**
+* Defines stages like:
+
+  * Compile
+  * Test
+  * Build
+  * Deploy
+
+📌 **Location matters**: The Jenkinsfile must be present **inside the branch**.
+
+---
+
+## 🧩 Solution Architecture (How It Works)
+
+### Step 1️⃣ Add Jenkinsfile to Required Branches
+
+* Go to GitHub repository
+* Switch to required branches (`main`, `feature`, `test`, etc.)
+* Add a `Jenkinsfile` with pipeline code
+
+✅ Branch has Jenkinsfile → Jenkins will create a pipeline job
+
+---
+
+### Step 2️⃣ Exclude `prod` Branch
+
+* Do **NOT** add a Jenkinsfile to the `prod` branch
+
+❌ No Jenkinsfile → ❌ No pipeline job created
+
+This automatically excludes `prod` without extra configuration.
+
+---
+
+### Step 3️⃣ Create Multibranch Pipeline Job in Jenkins
+
+On Jenkins server:
+
+1. Click **New Item**
+2. Job name: `MultibranchDemo`
+3. Select **Multibranch Pipeline**
+4. Click **OK**
+
+---
+
+### Step 4️⃣ Configure Git Repository
+
+* Under **Branch Sources**:
+
+  * Source: **Git**
+  * Repository URL:
+
+    ```
+    https://github.com/Sonal0409/MultiBranchDemo.git
+    ```
+
+* Credentials: (optional, if public repo)
+
+Click **Save**.
+
+---
+
+## 🔄 What Jenkins Does Automatically
+
+After saving the job, Jenkins will:
+
+1. Scan the GitHub repository
+2. Discover all branches
+3. Check each branch for a `Jenkinsfile`
+4. Create a **pipeline job per branch** that has a Jenkinsfile
+
+📌 Pipeline job names will be:
+
+```
+main
+feature-branch
+test
+release
+```
+
+❌ `prod` branch will NOT appear (no Jenkinsfile).
+
+---
+
+## 📌 Example Demo Repository
+
+Multibranch demo GitHub repo:
+
+```
+https://github.com/Sonal0409/MultiBranchDemo.git
+```
+
+When scanned by Jenkins:
+
+* Branches with Jenkinsfile → pipeline jobs created
+* Branch without Jenkinsfile → ignored
+
+---
+
+## ✅ Advantages of Multibranch Pipeline
+
+✔ Fully automated job creation
+✔ No manual Jenkins jobs
+✔ Branch-specific CI/CD
+✔ Works perfectly with Git flow
+✔ Easy to manage large projects
+✔ Ideal for feature-based development
+
+---
+
+## ⚠️ Important Notes / Best Practices
+
+* Jenkinsfile **must be named exactly** `Jenkinsfile`
+* Use **Declarative Pipeline syntax**
+* Store Jenkinsfile in Git (version controlled)
+* Do NOT use UI-created pipelines for multibranch
+* Use branch naming conventions wisely
+
+---
+
+📌 *Tip*: Multibranch pipelines are the foundation for advanced workflows like PR builds, feature testing, and environment-specific deployments.
