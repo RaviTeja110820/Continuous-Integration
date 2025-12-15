@@ -2377,3 +2377,364 @@ When scanned by Jenkins:
 ---
 
 📌 *Tip*: Multibranch pipelines are the foundation for advanced workflows like PR builds, feature testing, and environment-specific deployments.
+
+
+
+# Jenkins Architecture – Master & Agents
+
+## Jenkins Master
+
+Responsibilities of Jenkins Master:
+- Admin access to Jenkins
+- Create, configure, and execute jobs
+- Manage plugins, tools, and system settings
+- Display workspace and console output
+- Dispatch jobs to different agents
+- Connect to agents using SSH or JNLP protocol
+- Show agent job execution status
+
+---
+
+## Architecture See text diagram
+```
+                     +----------------------+
+                     |     Jenkins Master   |
+                     |----------------------|
+                     | - Configure Jobs     |
+                     | - Build Jobs         |
+                     | - Plugins            |
+                     | - Tools              |
+                     +----------+-----------+
+                                |
+         ----------------------------------------------------
+         |                        |                         |
+       SSH (22)                 SSH (22)               JNLP (Random Port)
+         |                        |                         |
++----------------+     +----------------+       +----------------------+
+|  Linux Agent   |     |  Linux Agent   |       |   Windows Agent      |
+|----------------|     |----------------|       |----------------------|
+| - Git          |     | - Git          |       | - Git                |
+| - Tomcat       |     | - HTTPD        |       | - Selenium           |
+| - Java 11/17   |     | - Java 11/17   |       | - Java 11/17         |
++----------------+     +----------------+       +----------------------+
+
+```
+
+## Jenkins Agent Requirements
+
+- No Jenkins installation is required on agent servers
+- Java **11 or 17** must be installed on all agents
+- Required tools must be installed based on job needs, such as:
+  - Git
+  - Maven
+  - Selenium
+  - Tomcat
+  - Any other build or test tools
+
+---
+
+## What Jenkins Creates on Agents
+
+When an agent connects to the Jenkins Master, Jenkins automatically creates:
+
+- A **remote directory** on each agent
+- Stores the **`remote.jar`** file
+- A **temporary workspace** for job execution
+
+---
+
+## JNLP (Java Network Launch Protocol)
+
+### Purpose
+- Mainly used for **Windows agents**
+- Allows agents to connect to Jenkins Master **without SSH**
+
+### How JNLP Works
+
+1. Download `remote.jar` from the Jenkins UI
+2. Run `remote.jar` on the agent machine
+3. The agent connects to the Jenkins Master over JNLP
+4. Jenkins Master executes jobs on the Windows agent
+
+---
+
+## Quick Interview Summary
+
+> Jenkins Master manages jobs, plugins, and scheduling, while Jenkins Agents execute jobs.  
+> Agents connect via **SSH (Linux)** or **JNLP (Windows)**, and only **Java and required tools** are needed on agents.
+
+
+
+
+# 🧩 Jenkins + Linux Agent (Amazon Linux 2) Setup
+
+This document explains how to configure a **Linux Jenkins Agent (Worker Node)** on AWS using **Amazon Linux 2**, and connect it to a **Jenkins Master** via **SSH**.
+
+---
+
+
+## 🏗️ Architecture Overview
+
+### Jenkins Master
+
+* Manages jobs, pipelines, plugins, and scheduling
+* Dispatches jobs to agents
+* Provides UI and orchestration
+
+### Jenkins Agent (Worker Node)
+
+* Executes build jobs
+* Requires **Java** and job-specific tools (Maven, Git, etc.)
+* Connects to Jenkins Master via **SSH**
+
+---
+
+## Step 1️⃣ Create Jenkins Agent (Worker Node)
+
+1. Launch an **EC2 instance** on AWS
+2. OS: **Amazon Linux 2**
+3. Instance type:
+
+   * `t2.micro` → practice / learning
+   * Larger instance → production workloads
+
+### Security Group
+
+* Allow **SSH (22)** from Jenkins Master
+
+### Key Pair
+
+* Use an existing or new `.pem` key
+* This key will be used later in Jenkins for SSH authentication
+
+---
+
+## Step 2️⃣ Install Required Packages on Agent Node
+
+### Login to the Agent EC2 Instance
+
+```bash
+ssh -i agent-key.pem ec2-user@<agent-public-ip>
+```
+
+### Install Git
+
+```bash
+sudo yum install git -y
+```
+
+### Install Java (Required for Jenkins Agent)
+
+Jenkins agents require **Java 11 or Java 17**.
+
+Install Java 11 on Amazon Linux 2:
+
+```bash
+sudo amazon-linux-extras install java-openjdk11 -y
+```
+
+Verify installation:
+
+```bash
+java -version
+```
+
+---
+
+## Step 3️⃣ Create Remote Root Directory for Jenkins Agent
+
+Jenkins needs a **remote root directory** on the agent to:
+
+* Store `remoting.jar`
+* Create workspaces
+* Run build jobs
+
+### Create Directory
+
+```bash
+cd /tmp
+mkdir jenkinsdir
+```
+
+Path used:
+
+```
+/tmp/jenkinsdir
+```
+
+### Set Permissions (Lab / Practice Only)
+
+```bash
+chmod -R 777 /tmp/jenkinsdir
+```
+
+⚠️ **Best Practice (Production):**
+
+* Avoid `777`
+* Use proper ownership (e.g., `ec2-user` or dedicated `jenkins` user)
+
+---
+
+## Step 4️⃣ Update Jenkins URL on Master
+
+On Jenkins Master UI:
+
+```
+Manage Jenkins → Configure System
+```
+
+Update **Jenkins URL** to the correct master URL:
+
+```
+http://<jenkins-master-ip>:8080/
+```
+
+Click **Save**.
+
+📌 This ensures agents can communicate correctly with the master.
+
+---
+
+## Step 5️⃣ Configure Agent Node on Jenkins Master
+
+Navigate to:
+
+```
+Manage Jenkins → Manage Nodes and Clouds → New Node
+```
+
+### Node Configuration
+
+* **Node name:** `linux-agent-1`
+* **Type:** Permanent Agent
+
+### Basic Settings
+
+* **Number of executors:** `1`
+
+  * (1 executor = 1 job at a time)
+* **Remote root directory:**
+
+  ```
+  /tmp/jenkinsdir
+  ```
+* **Labels:**
+
+  ```
+  linux_node
+  ```
+* **Usage:**
+
+  * Only build jobs with matching labels
+
+---
+
+## Step 6️⃣ Configure Launch Method (SSH)
+
+### Launch Method
+
+* **Launch agents via SSH**
+
+### SSH Details
+
+* **Host:** Private IP of the agent EC2 instance
+* **Credentials:** Add new Jenkins credentials
+
+### Create SSH Credentials
+
+* **Kind:** SSH Username with private key
+* **Username:**
+
+  ```
+  ec2-user
+  ```
+* **Private Key:**
+
+  * Open your `.pem` file on your laptop
+  * Copy entire content
+  * Paste into Jenkins → Private Key section
+
+Save and select this credential.
+
+---
+
+## Step 7️⃣ Host Key Verification Strategy
+
+Set:
+
+```
+Non-verifying Verification Strategy
+```
+
+⚠️ Acceptable for **labs/practice**.
+
+✔ **Production Best Practice:**
+
+* Use **Known Hosts Verification**
+
+---
+
+## Step 8️⃣ Verify Agent Connection
+
+Click **Save**.
+
+Jenkins will attempt to connect via SSH.
+
+### On Success:
+
+* Agent status → **Online**
+* Logs show Java detected and `remoting.jar` started
+
+---
+
+## Step 9️⃣ Use Agent in Jenkins Pipeline
+
+Example Declarative Pipeline:
+
+```groovy
+pipeline {
+    agent { label 'linux_node' }
+
+    stages {
+        stage('Check Java') {
+            steps {
+                sh 'java -version'
+            }
+        }
+    }
+}
+```
+
+📌 This ensures the job runs **only on the Linux agent**, not on the master.
+
+---
+
+## ❌ Common Issues & Fixes
+
+### Java Not Found
+
+* Ensure Java is installed on the agent
+* Verify Java version (11 or 17)
+
+### SSH Connection Failed
+
+* Security Group allows port 22
+* Correct private key used
+* Username is `ec2-user`
+
+### Permission Denied on Workspace
+
+* Check permissions on `/tmp/jenkinsdir`
+
+---
+
+## 🧠 Quick Interview Summary
+
+* **Jenkins Master** manages jobs, plugins, and scheduling
+* **Jenkins Agents** execute jobs and require Java + build tools
+* Linux agents usually connect via **SSH**
+* Jenkins uses a **remote root directory** on agents for workspaces and builds
+
+---
+
+📌 *Tip:* Always offload heavy builds to agents to keep the Jenkins master lightweight and st
