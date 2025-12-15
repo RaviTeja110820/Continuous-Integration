@@ -417,6 +417,22 @@ Meaning:
 This confirms Jenkins is successfully running and reachable on port 8080.
 
 
+## user data - Advanced settings
+```bash
+#!/bin/bash 
+sudo su -
+sudo apt update -y
+sudo apt install fontconfig openjdk-21-jre -y
+sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt update -y
+sudo apt install jenkins -y
+```
+
+
 
 
 # Changing Jenkins URL
