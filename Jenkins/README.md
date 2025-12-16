@@ -3019,3 +3019,239 @@ C:\Program Files\Git\cmd\git.exe
 
 📌 **Best Practice:**
 Use agents (Linux/Windows) for builds and keep Jenkins master lightweight.
+
+--- 
+
+# 🐳 Jenkins Dynamic Agent — Docker Agent Pipeline
+
+
+## 🔰 Static Agents vs Dynamic Agents
+
+### 🧱 Static Agents
+
+Static agents are **always available** and permanently connected to the Jenkins master.
+
+**Characteristics:**
+
+* Always running, even when no job is assigned
+* Manually created and connected to Jenkins
+* Consume resources continuously
+* Require manual maintenance
+
+**Examples:**
+
+* Linux EC2 agent
+* Windows agent
+
+---
+
+### ⚡ Dynamic Agents
+
+Dynamic agents are **created automatically when a pipeline starts** and **destroyed after the pipeline finishes**.
+
+**Characteristics:**
+
+* Created on-demand
+* Job runs inside the dynamic agent
+* Agent is deleted after job completion
+* No manual connection needed
+* Clean environment every time
+
+📌 **Lifecycle:**
+
+```
+Pipeline starts → Agent created → Job runs → Agent deleted
+```
+
+---
+
+## 🎯 Why Use Dynamic Agents?
+
+* No need to manage long‑running agents
+* Fresh environment for every build
+* No leftover files or dependencies
+* Faster scalability
+* Ideal for CI/CD pipelines
+
+---
+
+## 🐳 Why Docker is the Best Dynamic Agent
+
+Docker containers are the **most popular and efficient dynamic agents**.
+
+### Docker Concepts (Very Important)
+
+#### 🧩 Docker Image
+
+* A **read‑only template**
+* Contains OS + runtime + tools
+* Example: `maven:3.9.6-eclipse-temurin-17`
+
+📌 Think of it as a **binary blueprint** for containers.
+
+---
+
+#### 🚀 Docker Container
+
+* A **running instance** of a Docker image
+* Created when pipeline starts
+* Deleted when pipeline finishes
+* Jobs execute inside the container
+
+📌 Containers are **lightweight, fast, and disposable**.
+
+---
+
+## 🧠 How Jenkins Uses Docker Dynamic Agents
+
+1. Pipeline starts
+2. Jenkins pulls the required Docker image
+3. A container is created automatically
+4. Pipeline stages execute inside the container
+5. Container is destroyed after job completion
+
+✔ Workspace and logs are still visible in Jenkins UI
+✔ Jenkins master controls everything
+
+---
+
+## ⚙️ Jenkins Server Setup for Docker Agents
+
+### Step 1️⃣ Connect to Jenkins Server
+
+```bash
+sudo su -
+```
+
+---
+
+### Step 2️⃣ Install Docker
+
+```bash
+apt-get update && apt-get install docker.io -y
+```
+
+Verify installation:
+
+```bash
+docker --version
+```
+
+---
+
+### Step 3️⃣ Install Docker Pipeline Plugin
+
+From Jenkins Dashboard:
+
+```
+Manage Jenkins → Plugins → Available Plugins
+```
+
+* Search: **Docker Pipeline**
+* Select plugin
+* Click **Install**
+
+---
+
+### Step 4️⃣ Restart Jenkins
+
+After plugin installation:
+
+```bash
+systemctl restart jenkins
+```
+
+---
+
+### Step 5️⃣ Docker Permission Configuration
+
+By default, **only root** can run Docker commands.
+
+#### Lab / Practice (Temporary & Insecure)
+
+```bash
+chmod -R 777 /var/run/docker.sock
+```
+
+⚠️ **Warning:**
+
+* This is **NOT recommended for production**
+* Use only for labs or demos
+
+---
+
+#### ✅ Production Best Practice (Recommended)
+
+```bash
+usermod -aG docker jenkins
+systemctl restart docker
+systemctl restart jenkins
+```
+
+✔ Allows Jenkins user to run Docker securely
+
+---
+
+## 🚀 Example: Docker Dynamic Agent Pipeline
+
+```groovy
+pipeline {
+    agent {
+        docker {
+            image 'maven:3.9.6-eclipse-temurin-17'
+        }
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                sh 'mvn -version'
+                sh 'mvn clean package'
+            }
+        }
+    }
+}
+```
+
+📌 Jenkins will:
+
+* Pull Maven Docker image
+* Create container
+* Run build
+* Destroy container
+
+---
+
+## ❌ Common Misconceptions (Corrected)
+
+| Myth                        | Reality                            |
+| --------------------------- | ---------------------------------- |
+| Dynamic agent logs are lost | Logs are visible in Jenkins UI     |
+| Workspace disappears        | Jenkins retains workspace metadata |
+| Docker image is a container | Image ≠ Container                  |
+| Dynamic agents are slow     | Faster than static VMs             |
+
+---
+
+## 🧠 Interview‑Ready Summary
+
+* Static agents are permanent and always running
+* Dynamic agents are created per pipeline run
+* Docker is the most popular dynamic agent
+* Jenkins creates and destroys containers automatically
+* Provides clean, repeatable environments
+* Reduces infrastructure management overhead
+
+---
+
+📌 **Best Practice:**
+Use **Docker-based dynamic agents** for CI jobs and reserve static agents only when absolutely required.
+
+---
+
+If you want next:
+
+* Docker agent with volume mounts
+* Multi-container pipelines
+* Kubernetes dynamic agents
+* Comparison: Docker vs K8s agents
