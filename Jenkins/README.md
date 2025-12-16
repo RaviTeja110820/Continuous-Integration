@@ -2754,3 +2754,268 @@ pipeline {
 ---
 
 📌 *Tip:* Always offload heavy builds to agents to keep the Jenkins master lightweight and st
+
+
+
+# 🪟 Jenkins + Windows Agent Setup (Beginner‑Friendly Notes)
+It explains how to configure a **Windows machine as a Jenkins Agent (Slave)** and connect it to a Jenkins Master.
+
+---
+
+## 🏗️ Architecture Overview
+
+* **Jenkins Master**
+
+  * Manages jobs, pipelines, plugins, and scheduling
+  * Assigns jobs to agents
+
+* **Windows Agent (Slave Node)**
+
+  * Executes build jobs
+  * Runs tools like Git, Maven, Java, etc.
+  * Identified using **labels**
+
+---
+
+## Step 1️⃣ Verify Jenkins URL (Very Important)
+
+Go to:
+
+```
+Manage Jenkins → Configure System
+```
+
+* Ensure **Jenkins URL** matches the URL used in the browser
+
+Example:
+
+```
+http://<jenkins-master-ip>:8080/
+```
+
+Click **Save**.
+
+📌 This is required so agents can correctly communicate with the master.
+
+---
+
+## Step 2️⃣ Configure Agent Connection Strategy
+
+Go to:
+
+```
+Manage Jenkins → Security
+```
+
+Scroll down to **Agents** section.
+
+Select:
+
+```
+☑ Random
+```
+
+Click **Save**.
+
+### 🔍 What this means
+
+* Jenkins assigns jobs randomly to available agents
+* Job labels still control *where* jobs run
+
+---
+
+## Step 3️⃣ Create a New Windows Agent (Node)
+
+Go to:
+
+```
+Manage Jenkins → Manage Nodes and Clouds → New Node
+```
+
+### Node Type
+
+* **Node name:** `winslave`
+* **Type:** Permanent Agent
+
+Click **OK**.
+
+---
+
+## Step 4️⃣ Configure Windows Agent Settings
+
+### Basic Settings
+
+* **Name:** `winslave`
+* **Description:** Windows 10 machine
+
+---
+
+### Number of Executors
+
+```
+1
+```
+
+📌 Meaning:
+
+* 1 executor = only **one job at a time** on this agent
+* Recommended for beginners
+
+---
+
+### Remote Root Directory
+
+```
+C:\jenkinsdir
+```
+
+📌 Purpose:
+
+* Jenkins stores:
+
+  * Workspace
+  * Build files
+  * Logs
+
+### Action on Windows Machine
+
+1. Open **C Drive**
+2. Create a folder:
+
+```
+C:\jenkinsdir
+```
+
+---
+
+### Labels
+
+```
+win_slave
+```
+
+📌 Labels act like **tags**.
+They allow Jenkins to decide **which job runs on which agent**.
+
+---
+
+### Usage
+
+Select:
+
+```
+Only build jobs with label expressions matching this node
+```
+
+📌 Meaning:
+
+* Only jobs that explicitly use label `win_slave` will run here
+* Prevents accidental job execution on this node
+
+---
+
+## Step 5️⃣ Configure Launch Method (Windows)
+
+### Launch Method
+
+Select:
+
+```
+Launch agent by connecting it to the controller
+```
+
+📌 This method is **commonly used for Windows agents**.
+
+Jenkins will provide:
+
+* A command (or JAR)
+* You run it on the Windows machine
+
+This establishes the agent–master connection.
+
+---
+
+## Step 6️⃣ Configure Tools (Important)
+
+Scroll down to **Node Properties → Tool Locations**.
+
+### Add Git Tool Location
+
+* **Tool Name:** Git
+* **Path:**
+
+```
+C:\Program Files\Git\cmd\git.exe
+```
+
+📌 Ensure Git is installed on Windows before this step.
+
+---
+
+## Step 7️⃣ Save and Connect Agent
+
+1. Click **Save**
+2. Follow Jenkins instructions to start the agent on Windows
+3. Once connected:
+
+   * Node status → **Online**
+
+---
+
+## Step 8️⃣ Use Windows Agent in Jenkins Pipeline
+
+Example Pipeline:
+
+```groovy
+pipeline {
+    agent { label 'win_slave' }
+
+    stages {
+        stage('Check Git') {
+            steps {
+                bat 'git --version'
+            }
+        }
+    }
+}
+```
+
+📌 This ensures the job runs **only on the Windows agent**.
+
+---
+
+## ❌ Common Issues & Fixes
+
+### Agent Not Connecting
+
+* Ensure Jenkins URL is correct
+* Ensure Java is installed on Windows
+* Run agent command as Administrator
+
+### Git Not Found
+
+* Verify Git installation
+* Check path:
+
+```
+C:\Program Files\Git\cmd\git.exe
+```
+
+### Job Running on Wrong Node
+
+* Check job label matches `win_slave`
+
+---
+
+## 🧠 Quick Interview Summary
+
+* Jenkins Master orchestrates jobs
+* Windows agents execute builds
+* Labels control job placement
+* Remote root directory stores workspaces
+* Windows agents often connect using JNLP
+
+---
+
+📌 **Best Practice:**
+Use agents (Linux/Windows) for builds and keep Jenkins master lightweight.
