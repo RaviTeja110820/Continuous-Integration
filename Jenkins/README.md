@@ -3255,3 +3255,379 @@ If you want next:
 * Multi-container pipelines
 * Kubernetes dynamic agents
 * Comparison: Docker vs K8s agents
+
+
+# 🐳 Jenkins Dynamic Agent Pipelines — Practical Examples
+
+Each pipeline:
+
+* Creates a Docker container **on demand**
+* Runs commands inside the container
+* Automatically **destroys the container** after completion
+
+---
+
+## 🔹 Example 1: Maven — Dynamic Agent (Simple Demo)
+
+### 🎯 Goal
+
+* Create a **Maven Docker agent** dynamically
+* Run simple commands inside the container
+* Container is deleted after pipeline finishes
+
+### ✅ Corrected & Clean Pipeline
+
+```groovy
+pipeline {
+    agent {
+        docker {
+            // Official Maven image with JDK 17
+            image 'maven:3.9.6-eclipse-temurin-17'
+            
+            // Optional: enable dependency caching (commented for demo)
+            // args '-u root -v /root/.m2:/root/.m2'
+        }
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building the project with Maven inside Docker container'
+                sh 'mvn -version'
+                // sh 'mvn clean install'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running unit tests inside Docker container'
+                // sh 'mvn test'
+            }
+        }
+    }
+}
+```
+
+### 📝 Notes
+
+* A new container is created **every pipeline run**
+* No manual agent setup required
+* Best for quick CI jobs
+
+---
+
+## 🔹 Example 2: Maven — Cache Dependencies & Build Java Project
+
+### 🎯 Goal
+
+* Create a Maven Docker agent
+* Clone Java source code into container
+* Cache Maven dependencies using volume mount
+* Run tests inside the container
+
+---
+
+### ✅ Corrected Pipeline with Dependency Cache
+
+```groovy
+pipeline {
+    agent {
+        docker {
+            image 'maven:3.8.5-openjdk-17'
+            
+            // Cache Maven dependencies across builds
+            args '-u root -v /root/.m2:/root/.m2'
+        }
+    }
+    
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git 'https://github.com/Sonal0409/DevOpsCodeDemo.git'
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                sh 'mvn clean test'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build completed successfully!'
+        }
+        failure {
+            echo 'Build failed!'
+        }
+    }
+}
+```
+
+### 📝 Notes
+
+* `/root/.m2` volume speeds up builds
+* Docker image provides a clean Maven + JDK environment
+* Ideal for real-world Java CI pipelines
+
+---
+
+## 🔹 Example 3: Python — Dynamic Agent Pipeline
+
+### 🎯 Goal
+
+* Use Python Docker image as a dynamic agent
+* Run Python commands and tests inside container
+
+---
+
+### ✅ Corrected Python Pipeline
+
+```groovy
+pipeline {
+    agent {
+        docker {
+            image 'python:3.11-slim'
+        }
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Running inside Python Docker container'
+                sh 'python --version'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Executing Python tests'
+                sh 'python -c "print(\"All tests passed!\")"'
+            }
+        }
+    }
+}
+```
+
+### 📝 Notes
+
+* No Python installation needed on Jenkins server
+* Clean Python environment every run
+* Suitable for scripting, automation, and testing
+
+---
+
+## ✅ Key Corrections & Improvements Made
+
+* ✔ Standardized Docker image versions
+* ✔ Added clear comments and explanations
+* ✔ Fixed quoting issues in shell commands
+* ✔ Highlighted dependency caching best practice
+* ✔ Ensured pipelines are declarative and valid
+
+---
+
+## 🧠 Interview-Friendly Summary
+
+* Docker agents are **dynamic Jenkins agents**
+* Containers are created per pipeline run
+* Jenkins automatically deletes containers
+* Maven and Python pipelines run in isolated environments
+* Dependency caching improves performance
+
+---
+
+📌 **Best Practice:**
+Use Docker-based dynamic agents for CI jobs to ensure **clean, repeatable, and scalable builds**.
+
+
+# Jenkins + Python Pipeline (Dynamic Docker Agent)
+
+## Overview
+It explains a **Jenkins Pipeline as Code** example using:
+- Python project
+- Dynamic Docker Agent
+- Environment variables
+- Virtual environment setup
+- Code quality checks
+- Unit testing with reports
+- Post-build actions
+
+---
+
+## Prerequisites
+
+### Jenkins Server Setup
+1. Jenkins installed on EC2 / VM
+2. Docker installed on Jenkins server
+3. Add Jenkins user to Docker group:
+   ```bash
+   sudo usermod -aG docker jenkins
+   sudo systemctl restart jenkins
+   ```
+
+4. Required Jenkins Plugins:
+   - Docker Pipeline
+   - Git
+   - JUnit
+   - Workspace Cleanup
+
+---
+
+## Why Dynamic Docker Agent?
+- No Python installation on Jenkins required
+- Clean container for every build
+- Avoids dependency conflicts
+
+---
+
+## Git Repository
+https://github.com/Sonal0409/Jenkins-Python-Pipeline-demo.git
+
+---
+
+## Jenkinsfile
+```groovy
+
+pipeline {
+
+    /*
+     * Agent section:
+     * Uses a Docker container dynamically for the pipeline execution.
+     * Jenkins pulls the python:3.11-slim image and runs all stages inside it.
+     * args '-u root' ensures commands run as root user inside the container.
+     */
+    agent {
+        docker {
+            image 'python:3.11-slim'
+            args '-u root'
+        }
+    }
+
+    /*
+     * Environment variables:
+     * VENV_PATH   → location of Python virtual environment
+     * PYTHONPATH  → ensures current directory is in Python path
+     */
+    environment {
+        VENV_PATH = '.venv'
+        PYTHONPATH = '.'
+    }
+
+    /*
+     * Options:
+     * Pipeline will automatically fail if it runs longer than 10 minutes.
+     */
+    options {
+        timeout(time: 10, unit: 'MINUTES')
+    }
+
+    stages {
+
+        /*
+         * Stage 1: Checkout Code
+         * Pulls source code from the GitHub repository.
+         */
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/Sonal0409/Jenkins-Python-Pipeline-demo.git'
+            }
+        }
+
+        /*
+         * Stage 2: Set Up Python Environment
+         * - Creates a Python virtual environment
+         * - Activates it
+         * - Upgrades pip
+         * - Installs required dependencies
+         */
+        stage('Set Up Python Environment') {
+            steps {
+                sh '''
+                    python -m venv ${VENV_PATH}
+                    . ${VENV_PATH}/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
+            }
+        }
+
+        /*
+         * Stage 3: Code Review (Linting)
+         * Runs flake8 to check Python code quality and style issues.
+         */
+        stage('Code Review') {
+            steps {
+                sh '''
+                    . ${VENV_PATH}/bin/activate
+                    flake8 app.py tests/
+                '''
+            }
+        }
+
+        /*
+         * Stage 4: Run Tests
+         * Executes unit tests using pytest.
+         * Generates:
+         * - JUnit test report
+         * - Code coverage report in XML format
+         */
+        stage('Run Tests') {
+            steps {
+                sh '''
+                    . ${VENV_PATH}/bin/activate
+                    pytest tests \
+                        --junitxml=reports/test-results.xml \
+                        --cov=app \
+                        --cov-report=xml
+                '''
+            }
+        }
+
+        /*
+         * Stage 5: Archive Reports
+         * - Publishes test results in Jenkins UI
+         * - Archives coverage report as a build artifact
+         */
+        stage('Archive Reports') {
+            steps {
+                junit 'reports/test-results.xml'
+                archiveArtifacts artifacts: '**/coverage.xml', allowEmptyArchive: true
+            }
+        }
+    }
+
+    /*
+     * Post-build actions:
+     * success → shown when pipeline completes successfully
+     * failure → shown when any stage fails
+     * always  → cleans workspace after every build
+     */
+    post {
+        success {
+            echo 'Build, Linting & Tests Passed!'
+        }
+        failure {
+            echo 'Build Failed — check logs.'
+        }
+        always {
+            cleanWs()
+        }
+    }
+}
+
+
+```
+
+
+---
+
+## Result
+- Python dependencies are installed in an isolated environment
+- Unit tests are executed
+- Test and coverage reports are visible in Jenkins
+- Workspace is cleaned automatically
+
+---
+
