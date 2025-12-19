@@ -3620,7 +3620,6 @@ pipeline {
 
 ```
 
-
 ---
 
 ## Result
@@ -3631,3 +3630,127 @@ pipeline {
 
 ---
 
+# Jenkins – Slack Integration (Step-by-Step Guide)
+
+It explains how to **create a Slack workspace**, **add Jenkins CI integration**, and **configure Jenkins to send build notifications to Slack**.
+
+---
+
+## 1. Create a Slack Workspace and Channel
+
+1. Go to: https://app.slack.com/
+2. Enter your **email ID**
+3. Enter the **confirmation code**
+4. Click **Continue**
+5. Click **Create Workspace**
+
+### Workspace Details
+- **Workspace name**: `slack-demo`
+- Click **Next → Next**
+- Skip the last step by clicking **Skip this step**
+
+### Create a Channel
+When asked:
+> *What’s your team working on right now?*
+
+- Enter: `jenkins-demo`
+- This will be your **Slack channel name**
+
+---
+
+## 2. Add Jenkins CI Tool to Slack
+
+1. Open the **Slack channel**
+2. Click the **channel dropdown** (top-middle of the page)
+3. Click **Integrations**
+4. Click **Add an App**
+5. Search for **Jenkins**
+6. Click **Install**
+
+---
+
+## 3. Add Jenkins CI Integration to Slack
+
+1. Click **Add to Slack**
+2. Select your **channel name** (`#jenkins-demo`)
+3. Click **Add Jenkins CI Integration**
+
+---
+
+## 4. Copy Slack Integration Details
+
+On the next page, scroll to **Step 3** and note down:
+
+- **Team Subdomain**
+- **Integration Token Credential ID / Token**
+
+⚠️ These details are required for Jenkins configuration.
+
+---
+
+## 5. Install Slack Notification Plugin in Jenkins
+
+1. Go to **Jenkins Dashboard**
+2. Click **Manage Jenkins**
+3. Click **Plugins**
+4. Go to **Available Plugins**
+5. Search for **Slack Notification**
+6. Click **Install**
+
+---
+
+## 6. Configure Slack in Jenkins
+
+1. Go to **Manage Jenkins → Configure System**
+2. Search for **Slack**
+
+### Slack Configuration
+- **Workspace (Subdomain)**:  
+  Enter the **Team Subdomain** copied from Slack
+
+---
+
+## 7. Create Slack Token Credential in Jenkins
+
+1. Under **Slack configuration**, click **Add → Jenkins**
+2. Set:
+   - **Kind**: `Secret Text`
+   - **Secret**: Paste **Slack Integration Token**
+   - **ID**: `slack-token` (recommended)
+   - **Description**: Slack Token
+3. Click **Save**
+
+---
+
+## 8. Set Slack Channel in Jenkins
+
+- **Channel**: `#jenkins-demo`
+- Select the **Slack token credential** you created
+- Click **Save**
+
+---
+
+## 9. Enable Slack Notifications in Jenkins Job
+
+1. Open any **existing Freestyle Job**
+2. Click **Configure**
+3. Scroll to **Post-build Actions**
+4. Click **Add post-build action**
+5. Select **Slack Notifications**
+6. Choose notification events (Success, Failure, etc.)
+7. Click **Save**
+
+---
+
+## Result
+
+✅ Jenkins will now send **build status notifications** to your Slack channel  
+✅ Useful for CI/CD monitoring and team collaboration
+
+---
+
+## Interview Tip
+
+> Jenkins can be integrated with Slack using the Slack Notification plugin, allowing build status alerts to be sent to Slack channels in real time.
+
+---
