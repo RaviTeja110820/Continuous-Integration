@@ -3754,3 +3754,226 @@ On the next page, scroll to **Step 3** and note down:
 > Jenkins can be integrated with Slack using the Slack Notification plugin, allowing build status alerts to be sent to Slack channels in real time.
 
 ---
+
+## Slack notification pipeline Job and run it to get notifications on the slack
+
+```groovy
+pipeline {
+
+    // Run on any available Jenkins agent
+    agent any
+
+    // Use preconfigured Maven tool from Jenkins
+    tools {
+        maven 'mymaven'
+    }
+
+    stages {
+
+        stage('Slack Notification Pipeline') {
+            steps {
+
+                // Clone the source code from GitHub
+                git 'https://github.com/Sonal0409/DevOpsCodeDemo.git'
+
+                // Run Maven test phase
+                sh 'mvn test'
+            }
+        }
+    }
+
+    // Post-build actions (best practice)
+    post {
+
+        // Executed when pipeline succeeds
+        success {
+            slackSend(
+                channel: '#jenkins-demo',
+                message: '✅ Jenkins Pipeline executed successfully!'
+            )
+        }
+
+        // Executed when pipeline fails
+        failure {
+            slackSend(
+                channel: '#jenkins-demo',
+                message: '❌ Jenkins Pipeline failed. Please check the logs.'
+            )
+        }
+
+        // Always executed (optional but useful)
+        always {
+            echo 'Slack notification stage completed.'
+        }
+    }
+}
+
+```
+
+
+# Trigger Jenkins Job from Slack (Slash Commands)
+
+Slack **Slash Commands** allow triggering Jenkins jobs directly from Slack.
+
+---
+
+## Step 1: Enable Remote Trigger in Jenkins Job
+
+1. Go to **Jenkins Dashboard**
+2. Select your Jenkins job (Pipeline or Freestyle)
+3. Click **Configure**
+4. Go to **Build Triggers**
+5. Select:
+   - ✅ **Trigger builds remotely (e.g., from scripts)**
+6. Set a **Token Name** (example: `token1234`)
+7. Save the job
+
+---
+
+## Step 2: Construct Jenkins Remote Build URL
+
+### Format:
+```
+JENKINS_URL/job/JOB_NAME/build?token=TOKEN_NAME
+```
+
+### Example:
+```
+http://18.227.190.67:8080/job/Pipeline-SlackDemo/build?token=token1234
+```
+
+⚠️ Job name must match exactly (case-sensitive)
+
+---
+
+## Step 3: Configure Jenkins Security (Important)
+
+1. Go to **Manage Jenkins → Security**
+2. Under **Authorization**
+3. Enable:
+   - ✅ **Allow anonymous read access**
+4. Save changes
+
+> ⚠️ For production environments, it is recommended to use **API Tokens** instead of anonymous access.
+
+---
+
+## Step 4: Create Slack Slash Command
+
+1. Open **Slack Workspace**
+2. Go to **Slack App Directory**
+3. Click **Create New App**
+4. Choose **From Scratch**
+5. Select your workspace
+
+---
+
+## Step 5: Configure Slash Command
+
+1. Go to **Slash Commands**
+2. Click **Create New Command**
+
+### Command Details
+- **Command**: `/buildjenkins`
+  - Must start with `/`
+  - No spaces allowed
+- **Request URL**:
+```
+http://18.227.190.67:8080/job/Pipeline-SlackDemo/build?token=token1234
+```
+- **Short Description**: Trigger Jenkins build
+- **Usage Hint**: `/buildjenkins`
+
+3. Click **Save**
+
+---
+
+## Step 6: Install App to Slack Workspace
+
+1. Go to **Install App**
+2. Click **Add to Slack**
+3. Allow permissions
+
+---
+
+## Step 7: Trigger Jenkins Job from Slack
+
+1. Open your Slack channel
+2. Type:
+```
+/buildjenkins
+```
+3. Press Enter
+
+🎉 Jenkins job will start automatically!
+
+---
+
+## Pipeline-SLACK INTEGRATION WITH JENKINS ((Slash Commands))
+
+```grrovy
+pipeline {
+
+    agent any
+
+    tools {
+        // Maven tool must be configured in
+        // Manage Jenkins → Global Tool Configuration
+        maven 'mymaven'
+    }
+
+    stages {
+
+        stage('Notify Job Started') {
+            steps {
+                // Sends notification when pipeline starts
+                slackSend(
+                    channel: '#slack-jenkins-channel',
+                    message: "🚀 Job *${env.JOB_NAME}* #${env.BUILD_NUMBER} has started"
+                )
+            }
+        }
+
+        stage('Checkout & Test Repository') {
+            steps {
+                // Clone Git repository
+                git 'https://github.com/Sonal0409/DevOpsCodeDemo.git'
+
+                // Run Maven tests
+                sh 'mvn test'
+
+                // Notification after test execution
+                slackSend(
+                    channel: '#slack-jenkins-channel',
+                    message: "🧪 Test case execution completed for *${env.JOB_NAME}*"
+                )
+            }
+        }
+    }
+
+    post {
+
+        success {
+            slackSend(
+                channel: '#slack-jenkins-channel',
+                message: "✅ Job *${env.JOB_NAME}* #${env.BUILD_NUMBER} completed **SUCCESSFULLY**"
+            )
+        }
+
+        failure {
+            slackSend(
+                channel: '#slack-jenkins-channel',
+                message: "❌ Job *${env.JOB_NAME}* #${env.BUILD_NUMBER} **FAILED**. Please check Jenkins logs."
+            )
+        }
+
+        always {
+            slackSend(
+                channel: '#slack-jenkins-channel',
+                message: "ℹ️ Job *${env.JOB_NAME}* #${env.BUILD_NUMBER} execution finished"
+            )
+        }
+    }
+}
+
+```
