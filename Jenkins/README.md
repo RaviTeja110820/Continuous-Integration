@@ -3456,6 +3456,66 @@ It explains a **Jenkins Pipeline as Code** example using:
 
 ---
 
+## Flow
+```text
+                         +------------------------------------+
+                         |            Jenkins Server          |
+                         |------------------------------------|
+                         | - Jenkins Pipeline                 |
+                         | - Docker Plugin                    |
+                         | - Runs pipeline inside container   |
+                         +-----------------+------------------+
+                                           |
+                                           | (Docker Plugin)
+                                           v
+                         +------------------------------------+
+                         |        Docker Engine (Host)        |
+                         |------------------------------------|
+                         | 1. Pull image from Docker Hub      |
+                         | 2. Run container dynamically       |
+                         +-----------------+------------------+
+                                           |
+                                           | docker pull
+                                           v
+        +------------------------------------------------------------------+
+        |                          Docker Hub                               |
+        |-------------------------------------------------------------------|
+        |  Public Registry (Free)                                           |
+        |  Image: python:3.9-slim / python:3.11-slim                        |
+        +------------------------------------------------------------------+
+
+                                           |
+                                           | docker run
+                                           v
+        +------------------------------------------------------------------+
+        |                     Docker Container (Agent)                      |
+        |-------------------------------------------------------------------|
+        |  OS + Python Runtime (Python 3.11)                                |
+        |                                                                   |
+        |  Steps executed inside container:                                 |
+        |                                                                   |
+        |  1. Run container using python image                              |
+        |  2. Create virtual environment (./.venv)                          |
+        |  3. Install dependencies                                          |
+        |     - flake8                                                      |
+        |     - pytest                                                      |
+        |     - flask                                                       |
+        |  4. Review / lint the code                                        |
+        |  5. Run unit tests                                                |
+        |                                                                   |
+        |  Application Files:                                               |
+        |  - app.py                                                         |
+        |  - tests/                                                         |
+        |  - requirements.txt                                               |
+        +------------------------------------------------------------------+
+
+```
+
+>> Jenkins uses the Docker plugin to pull a Python image from Docker Hub and run the pipeline inside a temporary container where dependencies are installed, code is tested, and the container is destroyed after execution.
+
+
+
+
 ## Prerequisites
 
 ### Jenkins Server Setup
