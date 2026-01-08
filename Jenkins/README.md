@@ -5292,4 +5292,215 @@ pipeline {
 📌 **Tip:** Use `stash/unstash` for CI workflows and artifact repositories for CD and long-term storage.
 
 
+# 📚 Jenkins Shared Libraries — Complete Notes (Corrected & Explained)
+
+This document explains **Shared Libraries in Jenkins**, why they are used, how to configure them, and how to use them in a pipeline.
+
+It also includes a **corrected and commented pipeline example** for easy understanding.
+
+---
+
+## 🔰 What is a Shared Library in Jenkins?
+
+A **Jenkins Shared Library** is a collection of **Groovy scripts** stored in a **separate Git repository**.
+
+These scripts can be **reused across multiple Jenkins pipeline jobs**.
+
+---
+
+## 🎯 Why Shared Libraries Are Needed
+
+Without shared libraries:
+
+* Same pipeline logic is repeated in many Jenkinsfiles
+* Pipelines become long and hard to maintain
+* Code duplication increases
+
+With shared libraries:
+
+* Common logic is written **once**
+* Reused across **multiple jobs and pipelines**
+* Pipelines become **short, readable, and maintainable**
+
+📌 **Shared Library = Reusable Pipeline Code**
+
+---
+
+## ✅ Key Benefits of Shared Libraries
+
+✔ Reuse pipeline code across jobs
+✔ Centralized maintenance
+✔ Cleaner Jenkinsfiles
+✔ Easier debugging
+✔ Better team collaboration
+✔ Industry best practice
+
+---
+
+## 🧱 Structure of a Jenkins Shared Library (Concept)
+
+A typical shared library repository contains:
+
+```
+(shared-library-repo)
+├── vars/
+│   ├── repo.groovy
+│   ├── build.groovy
+│   └── filterlogs.groovy
+├── src/
+│   └── com/company/utils/
+│       └── Helper.groovy
+└── resources/
+```
+
+📌 In this example:
+
+* `vars/` contains global functions
+* Each `.groovy` file becomes a pipeline step
+
+---
+
+## 📦 Shared Library GitHub Repository
+
+Use this shared library repository:
+
+```
+https://github.com/Sonal0409/shared-library-Jenkins-June.git
+```
+
+This repo already contains reusable Groovy scripts.
+
+---
+
+## ⚙️ Configure Jenkins to Use Shared Library
+
+Go to Jenkins UI:
+
+```
+Manage Jenkins → Configure System
+```
+
+Scroll down to:
+
+```
+Global Trusted Pipeline Libraries
+```
+
+### Add a New Shared Library
+
+Fill the following details:
+
+* **Name:**
+
+  ```
+  sharedlib
+  ```
+* **Default Version:**
+
+  ```
+  main   // or master (depending on repo)
+  ```
+* **Retrieval Method:**
+
+  ```
+  Modern SCM
+  ```
+* **Source Code Management:**
+
+  ```
+  Git
+  ```
+* **Repository URL:**
+
+  ```
+  https://github.com/Sonal0409/shared-library-Jenkins-June.git
+  ```
+* **Credentials:**
+
+  * None (for public repo)
+
+Click **Save**.
+
+📌 Jenkins can now load shared library code automatically.
+
+---
+
+## 🧪 How Shared Libraries Are Used in a Pipeline
+
+### Key Syntax
+
+```groovy
+@Library('sharedlib') _
+```
+
+* `sharedlib` → name configured in Jenkins
+* `_` → required syntax to load the library
+
+---
+
+## ⚙️ Pipeline Using Shared Library
+
+```groovy
+@Library('sharedlib') _   // Load the shared library named "sharedlib"
+
+pipeline {
+
+    agent any
+    // Run pipeline on any available Jenkins agent
+
+    tools {
+        maven 'mymaven'
+        // Uses Maven configured in Manage Jenkins → Tools
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                // Calls repo.groovy from vars/ directory in shared library
+                // This function clones the Git repository
+                repo 'https://github.com/Sonal0409/DevOpsCodeDemo.git'
+            }
+        }
+
+        stage('Run Maven Commands') {
+            steps {
+                // Calls build.groovy from shared library
+                // Executes Maven goals defined inside the function
+                build 'test'
+
+                // Calls filterlogs.groovy
+                // Filters logs based on keyword and count
+                filterlogs('WARNING', 10)
+            }
+        }
+    }
+}
+```
+
+---
+
+
+## ⚠️ Important Rules for Shared Libraries
+
+* Library name in pipeline **must match Jenkins configuration**
+* Functions must be inside `vars/` directory
+* File name = function name
+* Public repo → no credentials needed
+* Changes in library affect **all pipelines using it**
+
+---
+
+## 🧠 Interview-Ready Summary
+
+* Shared libraries store reusable pipeline logic
+* Written in Groovy and stored in Git
+* Reduce duplication and simplify pipelines
+* Loaded using `@Library('name') _`
+* Industry-standard Jenkins best practice
+
+---
+
+📌 **Best Practice:**
+Use shared libraries for all common CI/CD logic and keep Jenkinsfiles minimal.
 
