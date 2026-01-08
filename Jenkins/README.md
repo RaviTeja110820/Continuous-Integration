@@ -5107,3 +5107,189 @@ triggers {
 
 📌 **Final Recommendation:**
 Automated Jenkins backup pipelines are **mandatory** for production‑grade CI/CD setups.
+
+
+
+# 📦 Jenkins Pipeline – Passing Artifacts Between Stages using `stash` & `unstash`
+
+This document explains **how to transfer files/artifacts from one stage to another stage** in a Jenkins pipeline using **`stash` and `unstash`**.
+
+It also includes a **fully commented Jenkins pipeline** so you can clearly understand what happens at each step.
+
+---
+
+## 🔰 Why Do We Need `stash` and `unstash`?
+
+In Jenkins pipelines:
+
+* Different stages can run on **different agents/nodes**
+* Each agent has its **own workspace**
+* Files created in one agent are **NOT automatically available** in another agent
+
+👉 `stash` and `unstash` solve this problem.
+
+---
+
+## 🧠 What `stash` and `unstash` Do
+
+* **`stash`**: Saves selected files from the current workspace to Jenkins (temporary storage)
+* **`unstash`**: Restores those saved files into the workspace of another stage
+
+### Execution Flow
+
+```
+Stage 1 (Agent A)
+   └── stash files
+        ↓
+Jenkins Controller (temporary storage)
+        ↓
+Stage 2 (Agent B)
+   └── unstash files
+```
+
+📌 Important:
+
+* Stashed data exists **only for that pipeline run**
+* Automatically deleted after the pipeline finishes
+
+---
+
+## 🎯 What This Pipeline Does
+
+This pipeline performs the following steps:
+
+1. Checkout source code
+2. Stash the source code
+3. Build a WAR file using Maven
+4. Stash the WAR file
+5. Test the WAR file
+6. Deploy the WAR file
+
+All file transfers between stages are done using **`stash` / `unstash`**.
+
+---
+
+## ⚙️ Pipeline
+
+```groovy
+pipeline {
+
+    agent none
+    // agent none means:
+    // Jenkins will NOT allocate a node globally
+    // Each stage will define its own agent
+
+    tools {
+        maven 'mymaven'
+        // Uses the Maven version configured in:
+        // Manage Jenkins → Tools
+    }
+
+    parameters {
+        choice(
+            name: 'AGENT_TYPE',
+            // Fixed invalid quotes and syntax
+            choices: ['linux-node', 'test_node', 'staging_node'],
+            description: 'Select the agent label to run pipeline stages'
+        )
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            agent { label "${params.AGENT_TYPE}" }
+            // Run checkout on the selected agent
+
+            steps {
+                echo "Running checkout on agent: ${params.AGENT_TYPE}"
+
+                // Clone the source code from GitHub
+                git 'https://github.com/Sonal0409/DevOpsCodeDemo.git'
+
+                // Stash the entire workspace (source code)
+                stash includes: '**', name: 'SOURCECODE'
+            }
+        }
+
+        stage('Build Code') {
+            agent { label "${params.AGENT_TYPE}" }
+
+            steps {
+                // Restore source code from previous stage
+                unstash 'SOURCECODE'
+
+                echo 'Building WAR using Maven'
+
+                // Compile and package the application
+                sh 'mvn clean package'
+
+                // Stash the generated WAR file
+                // Assumes WAR is generated under target/*.war
+                stash includes: 'target/*.war', name: 'WARFILE'
+            }
+        }
+
+        stage('Test Build') {
+            agent { label "${params.AGENT_TYPE}" }
+
+            steps {
+                // Restore the WAR file
+                unstash 'WARFILE'
+
+                echo 'Running tests on WAR file'
+
+                // Verify WAR file exists
+                sh 'ls -l target/'
+
+                // Stash WAR again for deployment stage
+                stash includes: 'target/*.war', name: 'WARFILE'
+            }
+        }
+
+        stage('Deploy Build') {
+            agent { label "${params.AGENT_TYPE}" }
+
+            steps {
+                // Restore WAR for deployment
+                unstash 'WARFILE'
+
+                echo 'Deploying WAR file'
+
+                // Example deployment verification
+                sh 'ls -l target/'
+            }
+        }
+    }
+}
+```
+
+---
+
+
+## ⚠️ Best Practices & Notes
+
+* `stash/unstash` is **temporary storage only**
+* Suitable for **small to medium-sized artifacts**
+* For large or long-term artifacts, use:
+
+  * Nexus
+  * Artifactory
+  * S3
+* Stash data is stored on the Jenkins controller
+
+---
+
+## 🧠 Interview-Ready Summary
+
+* `stash` saves files from one stage
+* `unstash` restores files in another stage
+* Used when stages run on different agents
+* Data exists only during the pipeline run
+* Not a replacement for artifact repositories
+
+---
+
+📌 **Tip:** Use `stash/unstash` for CI workflows and artifact repositories for CD and long-term storage.
+
+
+
